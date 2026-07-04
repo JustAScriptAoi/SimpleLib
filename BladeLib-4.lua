@@ -526,8 +526,7 @@ function BladeLib:CreateWindow(config)
 			sliderBox.BorderSizePixel = 0
 			sliderBox.ZIndex = 21
 			sliderBox.ClipsDescendants = true
-			Instance.new("UICorner", sliderBox).CornerRadius = UDim.new(0, 8)
-
+			Instance.new("UICorner", sliderBox).CornerRadius = UDim.new(0, 12) 
 			animStroke(sliderBox, 1.5)
 
 			local fillBar = Instance.new("Frame", sliderBox)
@@ -754,7 +753,8 @@ function BladeLib:CreateWindow(config)
 			local notifGui = Instance.new("ScreenGui")
 			notifGui.Name = "NyzNotif_" .. tostring(os.clock())
 			notifGui.ResetOnSpawn = false
-			notifGui.DisplayOrder = 9999
+			notifGui.DisplayOrder = 999999
+			notifGui.IgnoreGuiInset = true
 			notifGui.Parent = CoreGui
 
 			local frameH = 85
