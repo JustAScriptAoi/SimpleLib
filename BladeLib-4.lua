@@ -11,7 +11,7 @@ local BladeLib = {}
 BladeLib.__index = BladeLib
 
 local RED = Color3.new(1,1,1)
-local RED_DIM = Color3.fromRGB(30, 30, 35)
+local RED_DIM = Color3.fromRGB(1, 1, 1)
 local DARK = Color3.fromRGB(14, 10, 10)
 local DARK2 = Color3.fromRGB(20, 15, 15)
 local WHITE = Color3.new(1,1,1)
