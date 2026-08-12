@@ -18,7 +18,7 @@ local redzlib = {
 			}),
 			["Color Hub 2"] = Color3.fromRGB(70, 70, 70),
 			["Color Stroke"] = Color3.fromRGB(40, 40, 40),
-			["Color Theme"] = Color3.fromRGB(220, 50, 50),
+			["Color Theme"] = Color3.fromRGB(0, 174, 255),
 			["Color Text"] = Color3.fromRGB(243, 243, 243),
 			["Color Dark Text"] = Color3.fromRGB(180, 180, 180)
 		},
@@ -51,8 +51,8 @@ local redzlib = {
 		Version = "1.1.0"
 	},
 	Save = {
-		UISize = {400, 260},
-		TabSize = 115,
+		UISize = {370, 240},
+		TabSize = 100,
 		Theme = "Darker"
 	},
 	Settings = {},
@@ -1192,6 +1192,7 @@ local function SaveJson(FileName, save)
 end
 
 local Theme = redzlib.Themes[redzlib.Save.Theme]
+local PixelFont = Font.new("rbxasset://fonts/families/PressStart2P.json")
 
 local function AddEle(Name, Func)
 	redzlib.Elements[Name] = Func
@@ -1225,15 +1226,15 @@ AddEle("Button", function(parent, props, ...)
 		Text = "",
 		Size = UDim2.fromScale(1, 1),
 		BackgroundColor3 = Theme["Color Hub 2"],
-		BackgroundTransparency = 0.18,
+		BackgroundTransparency = 0.3,
 		AutoButtonColor = false
 	}), props), "Frame")
 	
 	New.MouseEnter:Connect(function()
-		New.BackgroundTransparency = 0.45
+		New.BackgroundTransparency = 0.55
 	end)
 	New.MouseLeave:Connect(function()
-		New.BackgroundTransparency = 0.18
+		New.BackgroundTransparency = 0.3
 	end)
 	if args[1] then
 		New.Activated:Connect(args[1])
@@ -1251,7 +1252,7 @@ end)
 
 local function ButtonFrame(Instance, Title, Description, HolderSize)
 	local TitleL = InsertTheme(Create("TextLabel", {
-		Font = Enum.Font.GothamMedium,
+		Font = PixelFont,
 		TextColor3 = Theme["Color Text"],
 		Size = UDim2.new(1, -20),
 		AutomaticSize = "Y",
@@ -1266,7 +1267,7 @@ local function ButtonFrame(Instance, Title, Description, HolderSize)
 	}), "Text")
 	
 	local DescL = InsertTheme(Create("TextLabel", {
-		Font = Enum.Font.Gotham,
+		Font = PixelFont,
 		TextColor3 = Theme["Color Dark Text"],
 		Size = UDim2.new(1, -20),
 		AutomaticSize = "Y",
@@ -1428,6 +1429,8 @@ function redzlib:MakeWindow(Configs)
 		Size = UDim2.fromOffset(UISizeX, UISizeY),
 		Position = UDim2.new(0.5, -UISizeX/2, 0.5, -UISizeY/2),
 		BackgroundTransparency = 0.18,
+		Image = "rbxassetid://140667816998359",
+		ScaleType = Enum.ScaleType.Crop,
 		Name = "Hub"
 	}), "Main")
 	Make("Gradient", MainFrame, {
@@ -1459,7 +1462,7 @@ function redzlib:MakeWindow(Configs)
 		TextSize = 12,
 		TextColor3 = Theme["Color Text"],
 		BackgroundTransparency = 1,
-		Font = Enum.Font.GothamMedium,
+		Font = PixelFont,
 		Name = "Title"
 	}, {
 		InsertTheme(Create("TextLabel", {
@@ -1473,15 +1476,15 @@ function redzlib:MakeWindow(Configs)
 			TextXAlignment = "Left",
 			TextYAlignment = "Bottom",
 			TextSize = 8,
-			Font = Enum.Font.Gotham,
+			Font = PixelFont,
 			Name = "SubTitle"
 		}), "DarkText")
 	}), "Text")
 	
 	local MainScroll = InsertTheme(Create("ScrollingFrame", Components, {
-		Size = UDim2.new(0, redzlib.Save.TabSize, 1, -TopBar.Size.Y.Offset),
+		Size = UDim2.new(0, redzlib.Save.TabSize, 1, -(TopBar.Size.Y.Offset + 46)),
 		ScrollBarImageColor3 = Theme["Color Theme"],
-		Position = UDim2.new(0, 0, 1, 0),
+		Position = UDim2.new(0, 0, 1, -46),
 		AnchorPoint = Vector2.new(0, 1),
 		ScrollBarThickness = 1.5,
 		BackgroundTransparency = 1,
@@ -1501,6 +1504,54 @@ function redzlib:MakeWindow(Configs)
 			Padding = UDim.new(0, 5)
 		})
 	}), "ScrollBar")
+	
+	local PlayerBar = InsertTheme(Create("Frame", Components, {
+		Size = UDim2.new(0, redzlib.Save.TabSize, 0, 42),
+		Position = UDim2.new(0, 0, 1, 0),
+		AnchorPoint = Vector2.new(0, 1),
+		BackgroundColor3 = Theme["Color Hub 2"],
+		BackgroundTransparency = 0.3,
+		Name = "Player Bar"
+	}), "Frame")Make("Corner", PlayerBar, UDim.new(0, 8))
+	
+	local AvatarImage = Create("ImageLabel", PlayerBar, {
+		Size = UDim2.new(0, 30, 0, 30),
+		Position = UDim2.new(0, 6, 0.5),
+		AnchorPoint = Vector2.new(0, 0.5),
+		BackgroundTransparency = 1,
+		Image = ""
+	})Make("Corner", AvatarImage, UDim.new(0.5, 0))
+	
+	task.spawn(function()
+		local Success, Content = pcall(Players.GetUserThumbnailAsync, Players, Player.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size100x100)
+		if Success then
+			AvatarImage.Image = Content
+		end
+	end)
+	
+	local DisplayNameLabel = InsertTheme(Create("TextLabel", PlayerBar, {
+		Size = UDim2.new(1, -44, 0, 14),
+		Position = UDim2.new(0, 42, 0, 6),
+		BackgroundTransparency = 1,
+		Font = PixelFont,
+		TextColor3 = Theme["Color Text"],
+		TextXAlignment = "Left",
+		TextSize = 9,
+		TextTruncate = "AtEnd",
+		Text = Player.DisplayName
+	}), "Text")
+	
+	local UsernameLabel = InsertTheme(Create("TextLabel", PlayerBar, {
+		Size = UDim2.new(1, -44, 0, 12),
+		Position = UDim2.new(0, 42, 0, 22),
+		BackgroundTransparency = 1,
+		Font = PixelFont,
+		TextColor3 = Theme["Color Dark Text"],
+		TextXAlignment = "Left",
+		TextSize = 7,
+		TextTruncate = "AtEnd",
+		Text = "@" .. Player.Name
+	}), "DarkText")
 	
 	local Containers = Create("Frame", Components, {
 		Size = UDim2.new(1, -MainScroll.Size.X.Offset, 1, -TopBar.Size.Y.Offset),
@@ -1532,7 +1583,8 @@ function redzlib:MakeWindow(Configs)
 		ControlSize1.Position = UDim2.fromOffset(math.clamp(Pos1.X.Offset, 430, 1000), math.clamp(Pos1.Y.Offset, 200, 500))
 		ControlSize2.Position = UDim2.new(0, math.clamp(Pos2.X.Offset, 135, 250), 1, 0)
 		
-		MainScroll.Size = UDim2.new(0, ControlSize2.Position.X.Offset, 1, -TopBar.Size.Y.Offset)
+		MainScroll.Size = UDim2.new(0, ControlSize2.Position.X.Offset, 1, -(TopBar.Size.Y.Offset + 46))
+		PlayerBar.Size = UDim2.new(0, ControlSize2.Position.X.Offset, 0, 42)
 		Containers.Size = UDim2.new(1, -MainScroll.Size.X.Offset, 1, -TopBar.Size.Y.Offset)
 		MainFrame.Size = ControlSize1.Position
 	end
@@ -1625,6 +1677,8 @@ function redzlib:MakeWindow(Configs)
 			Position = UDim2.fromScale(0.15, 0.15),
 			BackgroundColor3 = Theme["Color Hub 2"],
 			BackgroundTransparency = 0.18,
+			Image = "rbxassetid://140667816998359",
+			ScaleType = Enum.ScaleType.Crop,
 			AutoButtonColor = false,
 			Name = "FloatButton"
 		}), "Frame"))
@@ -1643,7 +1697,7 @@ function redzlib:MakeWindow(Configs)
 			Size = UDim2.new(1, -38, 1, 0),
 			Position = UDim2.new(0, 34, 0, 0),
 			BackgroundTransparency = 1,
-			Font = Enum.Font.GothamMedium,
+			Font = PixelFont,
 			TextColor3 = Theme["Color Text"],
 			TextXAlignment = "Left",
 			TextSize = 11,
@@ -1690,7 +1744,7 @@ function redzlib:MakeWindow(Configs)
 			AnchorPoint = Vector2.new(0.5, 0.5)
 		}, {
 			InsertTheme(Create("TextLabel", {
-				Font = Enum.Font.GothamBold,
+				Font = PixelFont,
 				Size = UDim2.new(1, 0, 0, 20),
 				Text = DTitle,
 				TextXAlignment = "Left",
@@ -1700,7 +1754,7 @@ function redzlib:MakeWindow(Configs)
 				BackgroundTransparency = 1
 			}), "Text"),
 			InsertTheme(Create("TextLabel", {
-				Font = Enum.Font.GothamMedium,
+				Font = PixelFont,
 				Size = UDim2.new(1, -25),
 				AutomaticSize = "Y",
 				Text = DText,
@@ -1753,7 +1807,7 @@ function redzlib:MakeWindow(Configs)
 			Make("Corner", Button)
 			SetProps(Button, {
 				Text = Name,
-				Font = Enum.Font.GothamBold,
+				Font = PixelFont,
 				TextColor3 = Theme["Color Text"],
 				TextSize = 12
 			})
@@ -1808,7 +1862,7 @@ function redzlib:MakeWindow(Configs)
 			Size = UDim2.new(1, TIcon and -25 or -15, 1),
 			Position = UDim2.fromOffset(TIcon and 25 or 15),
 			BackgroundTransparency = 1,
-			Font = Enum.Font.GothamMedium,
+			Font = PixelFont,
 			Text = TName,
 			TextColor3 = Theme["Color Text"],
 			TextSize = 10,
@@ -1830,7 +1884,7 @@ function redzlib:MakeWindow(Configs)
 			Size = FirstTab and UDim2.new(0, 4, 0, 4) or UDim2.new(0, 4, 0, 13),
 			Position = UDim2.new(0, 1, 0.5),
 			AnchorPoint = Vector2.new(0, 0.5),
-			BackgroundColor3 = Color3.fromRGB(220, 50, 50),
+			BackgroundColor3 = Color3.fromRGB(0, 174, 255),
 			BackgroundTransparency = FirstTab and 1 or 0
 		})Make("Corner", Selected, UDim.new(0.5, 0))
 		
@@ -1915,7 +1969,7 @@ function redzlib:MakeWindow(Configs)
 			})
 			
 			local SectionLabel = InsertTheme(Create("TextLabel", SectionFrame, {
-				Font = Enum.Font.GothamBold,
+				Font = PixelFont,
 				Text = SectionName,
 				TextColor3 = Theme["Color Text"],
 				Size = UDim2.new(1, -25, 1, 0),
@@ -2100,7 +2154,7 @@ function redzlib:MakeWindow(Configs)
 				AnchorPoint = Vector2.new(0.5, 0.5),
 				Position = UDim2.new(0.5, 0, 0.5, 0),
 				BackgroundTransparency = 1,
-				Font = Enum.Font.GothamBold,
+				Font = PixelFont,
 				TextScaled = true,
 				TextColor3 = Theme["Color Text"],
 				Text = "..."
@@ -2320,7 +2374,7 @@ function redzlib:MakeWindow(Configs)
 						Position = UDim2.new(0, 10),
 						Text = Name,
 						TextColor3 = Theme["Color Text"],
-						Font = Enum.Font.GothamBold,
+						Font = PixelFont,
 						TextXAlignment = "Left",
 						BackgroundTransparency = 1,
 						TextTransparency = 0.4
@@ -2452,14 +2506,14 @@ function redzlib:MakeWindow(Configs)
 			}), "Stroke")Make("Corner", SliderBar)
 			
 			local Indicator = Create("Frame", SliderBar, {
-				BackgroundColor3 = Color3.fromRGB(220, 50, 50),
+				BackgroundColor3 = Color3.fromRGB(0, 174, 255),
 				Size = UDim2.fromScale(0.3, 1),
 				BorderSizePixel = 0
 			})Make("Corner", Indicator)
 			
 			local SliderIcon = Create("Frame", SliderBar, {
 				Size = UDim2.new(0, 6, 0, 12),
-				BackgroundColor3 = Color3.fromRGB(220, 50, 50),
+				BackgroundColor3 = Color3.fromRGB(0, 174, 255),
 				Position = UDim2.fromScale(0.3, 0.5),
 				AnchorPoint = Vector2.new(0.5, 0.5),
 				BackgroundTransparency = 0.2
@@ -2471,7 +2525,7 @@ function redzlib:MakeWindow(Configs)
 				Position = UDim2.new(0, 0, 0.5),
 				BackgroundTransparency = 1,
 				TextColor3 = Theme["Color Text"],
-				Font = Enum.Font.FredokaOne,
+				Font = PixelFont,
 				TextSize = 12
 			}), "Text")
 			
@@ -2581,7 +2635,7 @@ function redzlib:MakeWindow(Configs)
 				AnchorPoint = Vector2.new(0.5, 0.5),
 				Position = UDim2.new(0.5, 0, 0.5, 0),
 				BackgroundTransparency = 1,
-				Font = Enum.Font.GothamBold,
+				Font = PixelFont,
 				TextScaled = true,
 				TextColor3 = Theme["Color Text"],
 				ClearTextOnFocus = TClearText,
@@ -2636,8 +2690,8 @@ function redzlib:MakeWindow(Configs)
 			local InviteLabel = Create("TextLabel", InviteHolder, {
 				Size = UDim2.new(1, 0, 0, 15),
 				Position = UDim2.new(0, 5),
-				TextColor3 = Color3.fromRGB(220, 50, 50),
-				Font = Enum.Font.GothamBold,
+				TextColor3 = Color3.fromRGB(0, 174, 255),
+				Font = PixelFont,
 				TextXAlignment = "Left",
 				BackgroundTransparency = 1,
 				TextSize = 10,
@@ -2661,7 +2715,7 @@ function redzlib:MakeWindow(Configs)
 			local LTitle = InsertTheme(Create("TextLabel", FrameHolder, {
 				Size = UDim2.new(1, -52, 0, 15),
 				Position = UDim2.new(0, 44, 0, 7),
-				Font = Enum.Font.GothamBold,
+				Font = PixelFont,
 				TextColor3 = Theme["Color Text"],
 				TextXAlignment = "Left",
 				BackgroundTransparency = 1,
@@ -2674,7 +2728,7 @@ function redzlib:MakeWindow(Configs)
 				Position = UDim2.new(0, 44, 0, 22),
 				TextWrapped = "Y",
 				AutomaticSize = "Y",
-				Font = Enum.Font.Gotham,
+				Font = PixelFont,
 				TextColor3 = Theme["Color Dark Text"],
 				TextXAlignment = "Left",
 				BackgroundTransparency = 1,
@@ -2687,10 +2741,10 @@ function redzlib:MakeWindow(Configs)
 				AnchorPoint = Vector2.new(0.5, 1),
 				Position = UDim2.new(0.5, 0, 1, -7),
 				Text = "Join",
-				Font = Enum.Font.GothamBold,
+				Font = PixelFont,
 				TextSize = 12,
 				TextColor3 = Color3.fromRGB(220, 220, 220),
-				BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+				BackgroundColor3 = Color3.fromRGB(0, 174, 255)
 			})Make("Corner", JoinButton, UDim.new(0, 5))
 			
 			local ClickDelay
@@ -2706,7 +2760,7 @@ function redzlib:MakeWindow(Configs)
 				})task.wait(5)
 				SetProps(JoinButton, {
 					Text = "Join",
-					BackgroundColor3 = Color3.fromRGB(220, 50, 50),
+					BackgroundColor3 = Color3.fromRGB(0, 174, 255),
 					TextColor3 = Color3.fromRGB(220, 220, 220)
 				})ClickDelay = false
 			end)
