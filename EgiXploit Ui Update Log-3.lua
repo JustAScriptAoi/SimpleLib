@@ -49,7 +49,7 @@ function Library:Init(titleName)
         local Grad = Instance.new("UIGradient")
         Grad.Color = ColorSequence.new({
             ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 0, 0)),
-            ColorSequenceKeypoint.new(0.25, Color3.fromRGB(255, 0, 0)),
+            ColorSequenceKeypoint.new(0.25, Color3.fromRGB(128, 128, 128)),
             ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
             ColorSequenceKeypoint.new(0.75, Color3.fromRGB(255, 0, 0)),
             ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
@@ -78,7 +78,7 @@ function Library:Init(titleName)
     local BorderGradient = Instance.new("UIGradient")
     BorderGradient.Color = ColorSequence.new({
         ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 0, 0)),
-        ColorSequenceKeypoint.new(0.25, Color3.fromRGB(255, 0, 0)),
+        ColorSequenceKeypoint.new(0.25, Color3.fromRGB(128, 128, 128)),
         ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
         ColorSequenceKeypoint.new(0.75, Color3.fromRGB(255, 0, 0)),
         ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
