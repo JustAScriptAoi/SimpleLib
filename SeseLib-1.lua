@@ -153,15 +153,25 @@ function SeseLib:CreateWindow(config)
 	AvatarIcon.Size = UDim2.new(0, 32, 0, 32)
 	AvatarIcon.Position = UDim2.new(0, 0, 0, 6)
 	AvatarIcon.BackgroundColor3 = DARK
-	AvatarIcon.Image = "rbxthumb://type=AvatarHeadShot&w=150&h=150&userId=" .. tostring(LocalPlayer.UserId)
+	AvatarIcon.Image = ""
 	AvatarIcon.ScaleType = Enum.ScaleType.Crop
 	AvatarIcon.ZIndex = 12
 	Instance.new("UICorner", AvatarIcon).CornerRadius = UDim.new(1, 0)
 
 	local avatarStroke = Instance.new("UIStroke", AvatarIcon)
+	avatarStroke.Color = ACCENT
 	avatarStroke.Thickness = 1.5
 	avatarStroke.Transparency = 0.3
 	grad3(avatarStroke, 90)
+
+	task.spawn(function()
+		local ok, content = pcall(function()
+			return Players:GetUserThumbnailAsync(LocalPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size100x100)
+		end)
+		if ok and content then
+			AvatarIcon.Image = content
+		end
+	end)
 
 	local DisplayNameLabel = Instance.new("TextLabel", ProfileHeader)
 	DisplayNameLabel.Size = UDim2.new(1, -40, 0, 18)
