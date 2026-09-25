@@ -16,8 +16,8 @@ local DARK = Color3.fromRGB(12, 8, 20)
 local DARK2 = Color3.fromRGB(18, 12, 28)
 local WHITE = Color3.fromRGB(255, 255, 255)
 local GRAY = Color3.fromRGB(160, 160, 160)
-local BG_IMAGE = "rbxassetid://119105938808909"
-local LOGO_DECAL = "rbxassetid://106445857253501"
+local BG_IMAGE = "rbxassetid://99940036804594"
+local LOGO_DECAL = "rbxassetid://118324456844701"
 
 local function grad3(obj, rot)
 	local g = Instance.new("UIGradient")
