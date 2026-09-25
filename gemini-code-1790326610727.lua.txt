@@ -1,0 +1,1841 @@
+script.Name = "Cella X Ryuu / Rylex Hub | The Hunt 20 Event [Limited Edition] Part 1"
+
+local SeseLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/JustAScriptAoi/SimpleLib/refs/heads/LOL/SeseLib-1.lua"))()
+
+local Window = SeseLib:CreateWindow({ Title = "Cella X Ryuu / Rylex Hub | The Hunt 20 Event [Limited Edition] Part 1" })
+
+local CoreGui = game:GetService("CoreGui")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+
+local Tabs = {
+    LobbyYear = Window:AddTab({ Name = "Lobby (Year)", Icon = "calendar" }),
+    NaturalDisaster = Window:AddTab({ Name = "Natural Disaster", Icon = "flame" }),
+    BladeBall = Window:AddTab({ Name = "Blade Ball", Icon = "swords" }),
+    RocketArena = Window:AddTab({ Name = "Rocket Arena", Icon = "rocket" }),
+    Crossroads = Window:AddTab({ Name = "Crossroads", Icon = "map-pin" }),
+    SwordFight = Window:AddTab({ Name = "Sword Fight Height IV", Icon = "shield" }),
+    ChaosCanyon = Window:AddTab({ Name = "Chaos Canyon", Icon = "mountain" }),
+    HighSchool = Window:AddTab({ Name = "Roblox High School", Icon = "graduation-cap" }),
+    Garden = Window:AddTab({ Name = "Grow A Garden", Icon = "sprout" }),
+    MM2 = Window:AddTab({ Name = "Murder Mystery 2", Icon = "skull" }),
+    AnimeRPG = Window:AddTab({ Name = "Anime RPG", Icon = "gamepad-2" }),
+    PizzaDelivery = Window:AddTab({ Name = "Pizza Delivery", Icon = "pizza" }),
+    DTI = Window:AddTab({ Name = "Dress To Impress", Icon = "sparkles" }),
+    LT2 = Window:AddTab({ Name = "Lumber Tycoon 2", Icon = "axe" }),
+    AdoptMe = Window:AddTab({ Name = "Adopt Me", Icon = "dog" }),
+    Jailbreak = Window:AddTab({ Name = "Jailbreak", Icon = "lock" }),
+    BuildABoat = Window:AddTab({ Name = "Build A Boat", Icon = "ship" }),
+    BerryAvenue = Window:AddTab({ Name = "Berry Avenue RP", Icon = "home" }),
+    Piggy = Window:AddTab({ Name = "Piggy", Icon = "circle-dot" }),
+    ApocalypseRising2 = Window:AddTab({ Name = "Apocalypse Rising 2", Icon = "crosshair" }),
+    BaseWar = Window:AddTab({ Name = "Base Wars", Icon = "swords" }),
+    Launcher = Window:AddTab({ Name = "Launcher Server Links", Icon = "link" }),
+    Credit = Window:AddTab({ Name = "Credit", Icon = "star" })
+}
+
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TeleportService = game:GetService("TeleportService")
+local Workspace = game:GetService("Workspace")
+local Lighting = game:GetService("Lighting")
+local LocalPlayer = Players.LocalPlayer
+
+local Camera = Workspace.CurrentCamera
+Workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
+    Camera = Workspace.CurrentCamera or Camera
+end)
+
+local AutoFarmToggle = false
+local AutoTixToggle = false
+local AutoSwordToggle = false
+local autoGiveAnniversaryEnabled = false
+local autoOwlIslandPromptEnabled = false
+local mm2AutoCoinEnabled = false
+local animeAutoAttackEnabled = false
+local instantInteractEnabled = false
+local dtiAutoCollectEnabled = false
+local EspToggle = false
+local NoclipConnection = nil
+
+local customRemoteArgsText = ""
+local lt2AutoSpamCustom = false
+
+local noclipEnabled = false
+local jbInstantInteract = false
+local jbNpcEspEnabled = false
+local currentNpcIndex = 1
+local activeNpcTween = nil
+
+local berryInstantInteract = false
+local aimlockEnabled = false
+
+local piggyTpWalk = false
+local piggyNoclip = false
+local piggyInfiniteJump = false
+local piggyEspFlag = false
+local piggyKeyEspState = false
+
+local piggySpeed = 16
+local piggyEspTargets = {}
+local piggyKeyTargets = {}
+local piggyKeyLabels = {}
+
+local azZombieEspEnabled = false
+local azZombieAimlockEnabled = false
+local azItemsEspEnabled = false
+local azMeleeEspEnabled = false
+local azAutoWalkEnabled = false
+
+local baseWarsEspToggle = false
+local antiAfkConnection = nil
+
+local function newTextPool()
+    local pool, used = {}, 0
+    local api = {}
+
+    function api:begin()
+        used = 0
+    end
+
+    function api:add(text, worldPosition, color, size, yOffset)
+        used += 1
+
+        local drawing = pool[used]
+        if not drawing then
+            drawing = Drawing.new("Text")
+            drawing.Center = true
+            drawing.Outline = true
+            pool[used] = drawing
+        end
+
+        local position, onScreen = Camera:WorldToViewportPoint(worldPosition)
+        drawing.Visible = onScreen
+
+        if onScreen then
+            drawing.Text = text
+            drawing.Position = Vector2.new(position.X, position.Y - (yOffset or 20))
+            drawing.Color = color
+            drawing.Size = size or 14
+        end
+    end
+
+    function api:finish()
+        for index = used + 1, #pool do
+            pool[index].Visible = false
+        end
+    end
+
+    function api:clear()
+        for _, drawing in ipairs(pool) do
+            drawing:Remove()
+        end
+        table.clear(pool)
+        used = 0
+    end
+
+    return api
+end
+
+local jailbreakPool = newTextPool()
+local zombiePool = newTextPool()
+local itemPool = newTextPool()
+local meleePool = newTextPool()
+
+local function getCharacterParts()
+    local character = LocalPlayer.Character
+    if not character then
+        return nil, nil, nil
+    end
+    return character,
+        character:FindFirstChild("HumanoidRootPart"),
+        character:FindFirstChildOfClass("Humanoid")
+end
+
+local function getRoot()
+    local _, root = getCharacterParts()
+    return root
+end
+
+local function getHumanoid()
+    local _, _, humanoid = getCharacterParts()
+    return humanoid
+end
+
+local function EnableNoclip()
+    if not NoclipConnection then
+        NoclipConnection = RunService.Stepped:Connect(function()
+            if (AutoFarmToggle or AutoTixToggle or AutoSwordToggle or mm2AutoCoinEnabled or noclipEnabled or piggyNoclip) and LocalPlayer.Character then
+                for _, part in ipairs(LocalPlayer.Character:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = false
+                    end
+                end
+            end
+        end)
+    end
+end
+
+local function DisableNoclip()
+    if not AutoFarmToggle and not AutoTixToggle and not AutoSwordToggle and not mm2AutoCoinEnabled and not noclipEnabled and not piggyNoclip and NoclipConnection then
+        NoclipConnection:Disconnect()
+        NoclipConnection = nil
+    end
+end
+
+RunService.Stepped:Connect(function()
+    if not noclipEnabled and not piggyNoclip then return end
+
+    local character = LocalPlayer.Character
+    if not character then return end
+
+    for _, part in ipairs(character:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.CanCollide = false
+        end
+    end
+end)
+
+task.spawn(function()
+    while true do
+        if jbInstantInteract then
+            pcall(function()
+                for _, object in ipairs(Workspace:GetDescendants()) do
+                    if object:IsA("ProximityPrompt") then
+                        object.HoldDuration = 0
+                        object.MaxActivationDistance = math.max(object.MaxActivationDistance, 30)
+                    end
+                end
+            end)
+        end
+        task.wait(1)
+    end
+end)
+
+RunService.RenderStepped:Connect(function()
+    if jbNpcEspEnabled then
+        local hue = (tick() % 5) / 5
+        local color = Color3.fromHSV(hue, 1, 1)
+        local root = getRoot()
+
+        jailbreakPool:begin()
+
+        pcall(function()
+            local r20Npcs = Workspace:FindFirstChild("R20Npcs")
+            if not r20Npcs then return end
+
+            for _, npc in ipairs(r20Npcs:GetChildren()) do
+                local part = npc:IsA("Model")
+                    and (npc.PrimaryPart or npc:FindFirstChildWhichIsA("BasePart"))
+                    or npc
+
+                if part and part:IsA("BasePart") and root then
+                    local distance = math.floor((root.Position - part.Position).Magnitude)
+                    jailbreakPool:add(
+                        string.format("[NPC: %s] (%d studs)", npc.Name, distance),
+                        part.Position,
+                        color,
+                        14
+                    )
+                end
+            end
+        end)
+
+        jailbreakPool:finish()
+    end
+end)
+
+local function lockCamera(worldPosition, strength)
+    if not Camera then return end
+    Camera.CFrame = Camera.CFrame:Lerp(
+        CFrame.new(Camera.CFrame.Position, worldPosition),
+        strength
+    )
+end
+
+local function getClosestPlayerTarget()
+    local root = getRoot()
+    if not root then return nil end
+
+    local closestPlayer, closestRoot, shortest = nil, nil, math.huge
+
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            local targetRoot = player.Character:FindFirstChild("HumanoidRootPart")
+            local targetHumanoid = player.Character:FindFirstChildOfClass("Humanoid")
+
+            if targetRoot and targetHumanoid and targetHumanoid.Health > 0 then
+                local distance = (root.Position - targetRoot.Position).Magnitude
+                if distance < shortest then
+                    shortest, closestPlayer, closestRoot = distance, player, targetRoot
+                end
+            end
+        end
+    end
+
+    return closestPlayer, closestRoot, shortest
+end
+
+RunService.RenderStepped:Connect(function()
+    if aimlockEnabled then
+        local _, targetRoot = getClosestPlayerTarget()
+        if targetRoot then
+            lockCamera(targetRoot.Position + Vector3.new(0, 1, 0), 0.3)
+        end
+    end
+end)
+
+task.spawn(function()
+    while true do
+        if berryInstantInteract then
+            pcall(function()
+                for _, object in ipairs(Workspace:GetDescendants()) do
+                    if object:IsA("ProximityPrompt") then
+                        object.HoldDuration = 0
+                        object.MaxActivationDistance = math.max(object.MaxActivationDistance, 30)
+                    end
+                end
+            end)
+        end
+        task.wait(1)
+    end
+end)
+
+local function clearPiggyEsp()
+    for _, model in ipairs(piggyEspTargets) do
+        local highlight = model:FindFirstChild("AirHubESP")
+        if highlight then highlight:Destroy() end
+    end
+    table.clear(piggyEspTargets)
+end
+
+local function clearPiggyKeyEsp()
+    for _, part in ipairs(piggyKeyTargets) do
+        local highlight = part:FindFirstChild("KeyESP")
+        if highlight then highlight:Destroy() end
+
+        local tag = part:FindFirstChild("KeyTag")
+        if tag then tag:Destroy() end
+    end
+
+    table.clear(piggyKeyTargets)
+    table.clear(piggyKeyLabels)
+end
+
+local function identifyKey(part)
+    local haystack = string.lower(part.Name) .. " " .. (part.Parent and string.lower(part.Parent.Name) or "")
+
+    if not string.find(haystack, "key") then return nil end
+    if part.Transparency >= 1 then return nil end
+
+    local colors = {
+        white  = { name = "White Key",  color = Color3.fromRGB(255, 255, 255) },
+        blue   = { name = "Blue Key",   color = Color3.fromRGB(0, 150, 255) },
+        red    = { name = "Red Key",    color = Color3.fromRGB(255, 50, 50) },
+        green  = { name = "Green Key",  color = Color3.fromRGB(0, 255, 100) },
+        yellow = { name = "Yellow Key", color = Color3.fromRGB(255, 255, 0) },
+        orange = { name = "Orange Key", color = Color3.fromRGB(255, 140, 0) },
+        purple = { name = "Purple Key", color = Color3.fromRGB(180, 0, 255) },
+        cyan   = { name = "Cyan Key",   color = Color3.fromRGB(0, 255, 255) },
+    }
+
+    for keyword, data in pairs(colors) do
+        if string.find(haystack, keyword) then
+            return data.name, data.color
+        end
+    end
+
+    return "Key", Color3.fromRGB(255, 255, 255)
+end
+
+RunService.RenderStepped:Connect(function()
+    if piggyKeyEspState then
+        local root = getRoot()
+        if root then
+            for _, entry in ipairs(piggyKeyLabels) do
+                if entry.part and entry.part.Parent then
+                    local distance = math.floor((entry.part.Position - root.Position).Magnitude)
+                    entry.label.Text = string.format("%s [%dm]", entry.baseName, distance)
+                end
+            end
+        end
+    end
+
+    if piggyEspFlag then
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character then
+                if not player.Character:FindFirstChild("AirHubESP") then
+                    local highlight = Instance.new("Highlight")
+                    highlight.Name = "AirHubESP"
+                    highlight.FillColor = Color3.fromRGB(255, 50, 50)
+                    highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                    highlight.Parent = player.Character
+                    piggyEspTargets[#piggyEspTargets + 1] = player.Character
+                end
+            end
+        end
+
+        for _, model in ipairs(Workspace:GetDescendants()) do
+            if model:IsA("Model") and model:FindFirstChildOfClass("Humanoid") then
+                local lower = string.lower(model.Name)
+                local isPiggy = string.find(lower, "piggy")
+                    or string.find(lower, "bot")
+                    or model:FindFirstChild("PiggyHead")
+
+                if isPiggy
+                    and not Players:GetPlayerFromCharacter(model)
+                    and not model:FindFirstChild("AirHubESP")
+                then
+                    local highlight = Instance.new("Highlight")
+                    highlight.Name = "AirHubESP"
+                    highlight.FillColor = Color3.fromRGB(0, 120, 255)
+                    highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                    highlight.Parent = model
+                    piggyEspTargets[#piggyEspTargets + 1] = model
+                end
+            end
+        end
+    end
+
+    if piggyKeyEspState then
+        for _, part in ipairs(Workspace:GetDescendants()) do
+            if part:IsA("BasePart") and not part:FindFirstChild("KeyESP") then
+                local keyName, keyColor = identifyKey(part)
+                if keyName then
+                    local highlight = Instance.new("Highlight")
+                    highlight.Name = "KeyESP"
+                    highlight.FillColor = keyColor
+                    highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                    highlight.Parent = part
+                    piggyKeyTargets[#piggyKeyTargets + 1] = part
+
+                    local tag = Instance.new("BillboardGui")
+                    tag.Name = "KeyTag"
+                    tag.Adornee = part
+                    tag.Size = UDim2.new(0, 200, 0, 40)
+                    tag.StudsOffset = Vector3.new(0, 2.5, 0)
+                    tag.AlwaysOnTop = true
+                    tag.Parent = part
+
+                    local label = Instance.new("TextLabel")
+                    label.Size = UDim2.new(1, 0, 1, 0)
+                    label.BackgroundTransparency = 1
+                    label.Text = keyName
+                    label.TextColor3 = keyColor
+                    label.TextStrokeTransparency = 0
+                    label.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                    label.Font = Enum.Font.FredokaOne
+                    label.TextSize = 15
+                    label.Parent = tag
+
+                    piggyKeyLabels[#piggyKeyLabels + 1] = {
+                        label = label,
+                        part = part,
+                        baseName = keyName,
+                    }
+                end
+            end
+        end
+    end
+end)
+
+RunService.RenderStepped:Connect(function(delta)
+    if not piggyTpWalk then return end
+
+    local character = LocalPlayer.Character
+    if not character then return end
+
+    local root = character:FindFirstChild("HumanoidRootPart")
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+
+    if root and humanoid and humanoid.MoveDirection.Magnitude > 0 then
+        root.CFrame = root.CFrame + humanoid.MoveDirection * piggySpeed * delta
+    end
+end)
+
+UserInputService.JumpRequest:Connect(function()
+    if not piggyInfiniteJump then return end
+
+    local character = LocalPlayer.Character
+    if not character then return end
+
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    local root = character:FindFirstChild("HumanoidRootPart")
+
+    if humanoid and root then
+        humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+        root.AssemblyLinearVelocity = Vector3.new(
+            root.AssemblyLinearVelocity.X,
+            45,
+            root.AssemblyLinearVelocity.Z
+        )
+    end
+end)
+
+local piggyLightingDefaults = {
+    Brightness = Lighting.Brightness,
+    ClockTime = Lighting.ClockTime,
+    GlobalShadows = Lighting.GlobalShadows,
+    FogEnd = Lighting.FogEnd,
+}
+
+local function applyBuffs(humanoid)
+    if not humanoid then return end
+    pcall(function()
+        humanoid.WalkSpeed = 40
+        humanoid.JumpPower = 80
+        humanoid.UseJumpPower = true
+    end)
+end
+
+local MELEE_KEYWORDS = {
+    "axe", "fire axe", "machete", "crowbar", "baseball bat", "pipe", "knife",
+    "cleaver", "sledgehammer", "wrench", "baton", "sword", "dagger", "pickaxe",
+}
+
+local function isMeleeWeapon(name)
+    local lower = name:lower()
+    for _, keyword in ipairs(MELEE_KEYWORDS) do
+        if lower:find(keyword) then return true end
+    end
+    return false
+end
+
+local function getClosestZombieTarget()
+    local root = getRoot()
+    if not root then return nil end
+
+    local closestRoot, shortest = nil, math.huge
+
+    for _, object in ipairs(Workspace:GetDescendants()) do
+        if object:IsA("Model") and object ~= LocalPlayer.Character then
+            local humanoid = object:FindFirstChildOfClass("Humanoid")
+            local hrp = object:FindFirstChild("HumanoidRootPart")
+                or object:FindFirstChildWhichIsA("BasePart")
+
+            if humanoid and hrp and humanoid.Health > 0 then
+                local distance = (root.Position - hrp.Position).Magnitude
+                if distance < shortest then
+                    shortest, closestRoot = distance, hrp
+                end
+            end
+        end
+    end
+
+    return closestRoot, shortest
+end
+
+task.spawn(function()
+    while true do
+        if azAutoWalkEnabled then
+            pcall(function()
+                local _, root, humanoid = getCharacterParts()
+                if root and humanoid then
+                    noclipEnabled = true
+                    applyBuffs(humanoid)
+
+                    local startPosition = root.Position
+                    while azAutoWalkEnabled and root.Parent do
+                        if (root.Position - startPosition).Magnitude >= 5000 then
+                            azAutoWalkEnabled = false
+                            break
+                        end
+                        root.CFrame = root.CFrame + (root.CFrame.LookVector * 2.5)
+                        task.wait(0.02)
+                    end
+                end
+            end)
+        end
+        task.wait(0.5)
+    end
+end)
+
+RunService.RenderStepped:Connect(function()
+    if azZombieAimlockEnabled then
+        local targetRoot = getClosestZombieTarget()
+        if targetRoot then
+            lockCamera(targetRoot.Position + Vector3.new(0, 0.5, 0), 0.4)
+        end
+    end
+
+    if azZombieEspEnabled then
+        local root = getRoot()
+        zombiePool:begin()
+
+        for _, object in ipairs(Workspace:GetDescendants()) do
+            if object:IsA("Model") and object ~= LocalPlayer.Character then
+                local humanoid = object:FindFirstChildOfClass("Humanoid")
+                local hrp = object:FindFirstChild("HumanoidRootPart")
+                    or object:FindFirstChildWhichIsA("BasePart")
+
+                if humanoid and hrp and humanoid.Health > 0 and root then
+                    local distance = math.floor((root.Position - hrp.Position).Magnitude)
+                    zombiePool:add(
+                        string.format("[Zombie] (%d studs)", distance),
+                        hrp.Position,
+                        Color3.fromRGB(0, 255, 0),
+                        14
+                    )
+                end
+            end
+        end
+
+        zombiePool:finish()
+    end
+
+    if azItemsEspEnabled then
+        local root = getRoot()
+        itemPool:begin()
+
+        pcall(function()
+            local containers = { Workspace }
+            local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+            if playerGui then
+                local templateDelivery = playerGui:FindFirstChild("Template Delivery")
+                if templateDelivery then containers[#containers + 1] = templateDelivery end
+            end
+
+            for _, container in ipairs(containers) do
+                for _, object in ipairs(container:GetDescendants()) do
+                    if object:IsA("Model") or object:IsA("BasePart") then
+                        local lower = object.Name:lower()
+                        local isItem = lower:find("famas")
+                            or lower:find("backpack")
+                            or lower:find("garbage")
+                            or lower:find("gun")
+                            or lower:find("bag")
+
+                        if isItem and not isMeleeWeapon(object.Name) then
+                            local part = object:IsA("Model")
+                                and (object.PrimaryPart or object:FindFirstChildWhichIsA("BasePart"))
+                                or object
+
+                            if part and part:IsA("BasePart") and root then
+                                local distance = math.floor((root.Position - part.Position).Magnitude)
+                                itemPool:add(
+                                    string.format("[Item: %s] (%d studs)", object.Name, distance),
+                                    part.Position,
+                                    Color3.fromRGB(255, 170, 0),
+                                    14
+                                )
+                            end
+                        end
+                    end
+                end
+            end
+        end)
+
+        itemPool:finish()
+    end
+
+    if azMeleeEspEnabled then
+        local root = getRoot()
+        meleePool:begin()
+
+        pcall(function()
+            local containers = { Workspace }
+            local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+            if playerGui then
+                local templateDelivery = playerGui:FindFirstChild("Template Delivery")
+                if templateDelivery then containers[#containers + 1] = templateDelivery end
+            end
+
+            for _, container in ipairs(containers) do
+                for _, object in ipairs(container:GetDescendants()) do
+                    if (object:IsA("Model") or object:IsA("BasePart")) and isMeleeWeapon(object.Name) then
+                        local part = object:IsA("Model")
+                            and (object.PrimaryPart or object:FindFirstChildWhichIsA("BasePart"))
+                            or object
+
+                        if part and part:IsA("BasePart") and root then
+                            local distance = math.floor((root.Position - part.Position).Magnitude)
+                            meleePool:add(
+                                string.format("[MELEE: %s] (%d studs)", object.Name, distance),
+                                part.Position,
+                                Color3.fromRGB(255, 50, 50),
+                                20,
+                                25
+                            )
+                        end
+                    end
+                end
+            end
+        end)
+
+        meleePool:finish()
+    end
+end)
+
+local function UpdateBaseWarsESP(state)
+    baseWarsEspToggle = state
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer and plr.Character then
+            local highlight = plr.Character:FindFirstChild("BaseWarsESPHighlight")
+            if baseWarsEspToggle then
+                if not highlight then
+                    highlight = Instance.new("Highlight")
+                    highlight.Name = "BaseWarsESPHighlight"
+                    highlight.FillColor = Color3.fromRGB(255, 140, 0)
+                    highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                    highlight.FillTransparency = 0.5
+                    highlight.OutlineTransparency = 0
+                    highlight.Parent = plr.Character
+                end
+            else
+                if highlight then
+                    highlight:Destroy()
+                end
+            end
+        end
+    end
+end
+
+Players.PlayerAdded:Connect(function(plr)
+    plr.CharacterAdded:Connect(function(char)
+        if baseWarsEspToggle then
+            task.wait(0.5)
+            if not char:FindFirstChild("BaseWarsESPHighlight") then
+                local highlight = Instance.new("Highlight")
+                highlight.Name = "BaseWarsESPHighlight"
+                highlight.FillColor = Color3.fromRGB(255, 140, 0)
+                highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                highlight.FillTransparency = 0.5
+                highlight.OutlineTransparency = 0
+                highlight.Parent = char
+            end
+        end
+    end)
+end)
+
+local function TeleportTo(target)
+    local root = getRoot()
+    if not root then return end
+    
+    if typeof(target) == "CFrame" then
+        root.CFrame = target
+    elseif typeof(target) == "Vector3" then
+        root.CFrame = CFrame.new(target)
+    end
+end
+
+local function TeleportToLobbyPen()
+    local hitbox = workspace:FindFirstChild("RescueEventWorld") 
+        and workspace.RescueEventWorld:FindFirstChild("LobbyPen") 
+        and workspace.RescueEventWorld.LobbyPen:FindFirstChild("Hitbox")
+        
+    if hitbox then
+        TeleportTo(hitbox.CFrame)
+    end
+end
+
+local function UpdateESP(state)
+    EspToggle = state
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer and plr.Character then
+            local highlight = plr.Character:FindFirstChild("ESPHighlight")
+            if EspToggle then
+                if not highlight then
+                    highlight = Instance.new("Highlight")
+                    highlight.Name = "ESPHighlight"
+                    highlight.FillColor = Color3.fromRGB(255, 0, 0)
+                    highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                    highlight.FillTransparency = 0.5
+                    highlight.OutlineTransparency = 0
+                    highlight.Parent = plr.Character
+                end
+            else
+                if highlight then
+                    highlight:Destroy()
+                end
+            end
+        end
+    end
+end
+
+Players.PlayerAdded:Connect(function(plr)
+    plr.CharacterAdded:Connect(function(char)
+        if EspToggle then
+            task.wait(0.5)
+            if not char:FindFirstChild("ESPHighlight") then
+                local highlight = Instance.new("Highlight")
+                highlight.Name = "ESPHighlight"
+                highlight.FillColor = Color3.fromRGB(255, 0, 0)
+                highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                highlight.FillTransparency = 0.5
+                highlight.OutlineTransparency = 0
+                highlight.Parent = char
+            end
+        end
+    end)
+end)
+
+local yearPositions = {
+    Vector3.new(-34.59, 4.25, 347.20),
+    Vector3.new(-708.88, 12.36, 322.56),
+    Vector3.new(-1419.72, 13.75, 300.00),
+    Vector3.new(-2118.99, 14.79, 369.50),
+    Vector3.new(-2784.23, 16.32, 266.90),
+    Vector3.new(-3598.60, 16.33, 140.42),
+    Vector3.new(-4268.47, 34.02, 377.20),
+    Vector3.new(-4962.75, 1.71, 553.10),
+    Vector3.new(-5587.46, 42.49, 78.51),
+    Vector3.new(-6197.20, 27.20, 289.10),
+    Vector3.new(-6960.60, 16.15, -2.65),
+    Vector3.new(-7815.03, 25.56, -96.42),
+    Vector3.new(-8506.01, 17.93, 56.56),
+    Vector3.new(-9099.30, 12.30, 387.01),
+    Vector3.new(-9670.88, 13.34, 247.13),
+    Vector3.new(-10518.39, 19.38, 336.27),
+    Vector3.new(-11145.82, 10.16, 396.98),
+    Vector3.new(-11925.57, 9.05, 169.41),
+    Vector3.new(-12598.68, 31.77, 191.64),
+    Vector3.new(-13432.66, 18.28, 303.72),
+}
+
+for index = 1, 20 do
+    Tabs.LobbyYear:AddButton({
+        Name = "Go To Lobby Year " .. index,
+        Callback = function()
+            pcall(function()
+                TeleportTo(yearPositions[index])
+            end)
+        end
+    })
+end
+
+Tabs.NaturalDisaster:AddToggle({
+    Name = "Auto Collect Pet",
+    Callback = function(state)
+        AutoFarmToggle = state
+        
+        if AutoFarmToggle then
+            EnableNoclip()
+        else
+            DisableNoclip()
+        end
+        
+        task.spawn(function()
+            while AutoFarmToggle do
+                local npcsFolder = workspace:FindFirstChild("NPCs")
+                
+                if npcsFolder then
+                    local npcs = npcsFolder:GetChildren()
+                    
+                    for _, npc in ipairs(npcs) do
+                        if not AutoFarmToggle then break end
+                        
+                        local primaryPart = npc:IsA("Model") and (npc.PrimaryPart or npc:FindFirstChild("HumanoidRootPart") or npc:FindFirstChildWhichIsA("BasePart")) or (npc:IsA("BasePart") and npc)
+                        
+                        if primaryPart then
+                            TeleportTo(primaryPart.CFrame * CFrame.new(0, 2, 0))
+                            task.wait(0.2)
+                            
+                            TeleportToLobbyPen()
+                            task.wait(0.3)
+                        end
+                    end
+                end
+                
+                task.wait(1)
+            end
+        end)
+    end
+})
+
+Tabs.NaturalDisaster:AddButton({
+    Name = "Goto Save Zone",
+    Callback = function()
+        game.Players.LocalPlayer.Character:PivotTo(CFrame.new(Vector3.new(-304, 195, 347)))
+    end
+})
+
+Tabs.BladeBall:AddToggle({
+    Name = "Auto Collect Tix",
+    Callback = function(state)
+        AutoTixToggle = state
+        
+        if AutoTixToggle then
+            EnableNoclip()
+        else
+            DisableNoclip()
+        end
+        
+        task.spawn(function()
+            while AutoTixToggle do
+                local allDescendants = workspace:GetDescendants()
+                
+                for _, obj in ipairs(allDescendants) do
+                    if not AutoTixToggle then break end
+                    
+                    if obj.Name == "TIX_EVENT_SPAWN" then
+                        local primaryPart = obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChildWhichIsA("BasePart")) or (obj:IsA("BasePart") and obj)
+                        
+                        if primaryPart then
+                            TeleportTo(primaryPart.CFrame * CFrame.new(0, 2, 0))
+                            task.wait(0.2)
+                        end
+                    end
+                end
+                
+                task.wait(1)
+            end
+        end)
+    end
+})
+
+Tabs.RocketArena:AddToggle({
+    Name = "ESP All Player",
+    Callback = function(state)
+        UpdateESP(state)
+    end
+})
+
+Tabs.Crossroads:AddToggle({
+    Name = "ESP All Player",
+    Callback = function(state)
+        UpdateESP(state)
+    end
+})
+
+Tabs.SwordFight:AddToggle({
+    Name = "Auto Tween to Sword",
+    Callback = function(state)
+        AutoSwordToggle = state
+        
+        if AutoSwordToggle then
+            EnableNoclip()
+        else
+            DisableNoclip()
+        end
+        
+        task.spawn(function()
+            while AutoSwordToggle do
+                local waypoints = {
+                    CFrame.new(-471, 390, 79),
+                    CFrame.new(85, 637, -291),
+                    CFrame.new(56, 634, -282)
+                }
+                
+                for _, targetCFrame in ipairs(waypoints) do
+                    if not AutoSwordToggle then break end
+                    
+                    local hrp = getRoot()
+                    if hrp then
+                        local tweenInfo = TweenInfo.new(2)
+                        local tween = TweenService:Create(hrp, tweenInfo, {CFrame = targetCFrame})
+                        
+                        tween:Play()
+                        tween.Completed:Wait()
+                    end
+                end
+                
+                task.wait(1)
+            end
+        end)
+    end
+})
+
+Tabs.ChaosCanyon:AddToggle({
+    Name = "ESP All Player",
+    Callback = function(state)
+        UpdateESP(state)
+    end
+})
+
+local function fireAdvanceProgress(index)
+    pcall(function()
+        ReplicatedStorage.RemoteFunctions.Special.AdvanceMainProgress:FireServer(index)
+    end)
+end
+
+if game.PlaceId == 9689581 then
+    Tabs.HighSchool:AddButton({
+        Name = "Skip main quests",
+        Callback = function()
+            for index = 1, 10 do
+                fireAdvanceProgress(index)
+            end
+        end
+    })
+
+    Tabs.HighSchool:AddButton({
+        Name = "Skip math quest",
+        Callback = function()
+            local answers = {}
+            for _ = 1, 9 do
+                answers[#answers + 1] = {
+                    SubmittedAnswer = math.huge,
+                    CorrectAnswer = math.huge,
+                    Result = true,
+                }
+            end
+            answers[#answers + 1] = {
+                SubmittedAnswer = "Subscribe to Kynaroid / ICraftPe!",
+                CorrectAnswer = "Subscribe to Kynaroid / ICraftPe!",
+                Result = true,
+            }
+
+            pcall(function()
+                ReplicatedStorage.RemoteFunctions.Special.SubmitMathExam:InvokeServer({ answers })
+            end)
+        end
+    })
+
+    Tabs.HighSchool:AddButton({
+        Name = "Skip to metal detector quest",
+        Callback = function()
+            fireAdvanceProgress(12)
+            fireAdvanceProgress(13)
+        end
+    })
+
+    Tabs.HighSchool:AddButton({
+        Name = "Get metal detector",
+        Callback = function()
+            pcall(function()
+                ReplicatedStorage.RemoteFunctions.Special.RequestDetector:FireServer()
+            end)
+        end
+    })
+
+    for index = 1, 3 do
+        Tabs.HighSchool:AddButton({
+            Name = "Get " .. ({ "first", "second", "third" })[index] .. " relic",
+            Callback = function()
+                pcall(function()
+                    local attribute = LocalPlayer:GetAttribute("ItemPos" .. index)
+                    if attribute then
+                        TeleportTo(attribute)
+                    end
+                end)
+            end
+        })
+    end
+
+    Tabs.HighSchool:AddButton({
+        Name = "Skip last quests (for a badge)",
+        Callback = function()
+            for index = 16, 20 do
+                fireAdvanceProgress(index)
+            end
+        end
+    })
+else
+    Tabs.HighSchool:AddButton({
+        Name = "Teleport to event game",
+        Callback = function()
+            pcall(function()
+                TeleportService:Teleport(9689581)
+            end)
+        end
+    })
+end
+
+Tabs.Garden:AddToggle({
+    Name = "Auto Give Anniversary",
+    Callback = function(state)
+        autoGiveAnniversaryEnabled = state
+    end
+})
+
+Tabs.Garden:AddToggle({
+    Name = "Auto Owl Island Prompt",
+    Callback = function(state)
+        autoOwlIslandPromptEnabled = state
+    end
+})
+
+task.spawn(function()
+    while true do
+        if autoGiveAnniversaryEnabled then
+            pcall(function()
+                local events = ReplicatedStorage:FindFirstChild("GameEvents")
+                local anniversary = events and events:FindFirstChild("Anniversary20th")
+                local giveAll = anniversary and anniversary:FindFirstChild("GiveAll")
+                if giveAll then
+                    giveAll:FireServer()
+                end
+            end)
+        end
+        task.wait(1)
+    end
+end)
+
+task.spawn(function()
+    while true do
+        if autoOwlIslandPromptEnabled then
+            pcall(function()
+                local event20th = workspace:FindFirstChild("20thEvent")
+                local owlIsland = event20th and event20th:FindFirstChild("OwlIsland")
+                if owlIsland then
+                    for _, descendant in ipairs(owlIsland:GetDescendants()) do
+                        if not autoOwlIslandPromptEnabled then break end
+                        if descendant:IsA("ProximityPrompt") then
+                            pcall(function()
+                                fireproximityprompt(descendant)
+                            end)
+                        end
+                    end
+                end
+            end)
+        end
+        task.wait(0.5)
+    end
+end)
+
+Tabs.MM2:AddToggle({
+    Name = "Auto Collect Coin",
+    Callback = function(state)
+        mm2AutoCoinEnabled = state
+        if mm2AutoCoinEnabled then
+            EnableNoclip()
+        else
+            DisableNoclip()
+        end
+    end
+})
+
+task.spawn(function()
+    while true do
+        if mm2AutoCoinEnabled then
+            pcall(function()
+                local root = getRoot()
+                if root then
+                    for _, object in ipairs(workspace:GetDescendants()) do
+                        if not mm2AutoCoinEnabled then break end
+
+                        local lower = object.Name:lower()
+                        local looksLikeCoin = lower:find("coin")
+                            or (object.Parent and object.Parent.Name:lower():find("coin"))
+
+                        if looksLikeCoin then
+                            local part = object:IsA("BasePart") and object
+                                or (object:IsA("Model")
+                                    and (object.PrimaryPart
+                                        or object:FindFirstChildWhichIsA("BasePart", true)))
+
+                            if part then
+                                local touchInterest = object:FindFirstChild("TouchInterest", true)
+                                    or part:FindFirstChild("TouchInterest")
+
+                                if touchInterest then
+                                    root.CFrame = part.CFrame + Vector3.new(0, 0.5, 0)
+                                    pcall(function()
+                                        firetouchinterest(root, part, 0)
+                                        task.wait(0.05)
+                                        firetouchinterest(root, part, 1)
+                                    end)
+                                    task.wait(0.12)
+                                end
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+        task.wait(0.4)
+    end
+end)
+
+Tabs.AnimeRPG:AddToggle({
+    Name = "Auto Attack Mob",
+    Callback = function(state)
+        animeAutoAttackEnabled = state
+    end
+})
+
+task.spawn(function()
+    while true do
+        if animeAutoAttackEnabled then
+            pcall(function()
+                local mobsFolder = workspace:FindFirstChild("Mobs")
+                if mobsFolder then
+                    for _, mob in ipairs(mobsFolder:GetChildren()) do
+                        if not animeAutoAttackEnabled then break end
+
+                        local targetModel = mob:FindFirstChild("Model") or mob
+                        local part = targetModel:IsA("Model")
+                            and (targetModel.PrimaryPart
+                                or targetModel:FindFirstChildWhichIsA("BasePart"))
+                            or targetModel
+                        local humanoid = targetModel:FindFirstChildOfClass("Humanoid")
+
+                        if part and part:IsA("BasePart")
+                            and (not humanoid or humanoid.Health > 0)
+                        then
+                            local position = part.Position
+                            local lookVector = part.CFrame.LookVector
+
+                            local remotes = ReplicatedStorage:FindFirstChild("Remotes")
+                            local combatRemote = remotes and remotes:FindFirstChild("Combat_Attack")
+
+                            if combatRemote then
+                                combatRemote:FireServer(
+                                    "Swordmaster2",
+                                    vector.create(position.X, position.Y, position.Z),
+                                    vector.create(lookVector.X, lookVector.Y, lookVector.Z),
+                                    67
+                                )
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+        task.wait(0.2)
+    end
+end)
+
+Tabs.PizzaDelivery:AddToggle({
+    Name = "Instant Interact",
+    Callback = function(state)
+        instantInteractEnabled = state
+    end
+})
+
+task.spawn(function()
+    while true do
+        if instantInteractEnabled then
+            pcall(function()
+                for _, object in ipairs(workspace:GetDescendants()) do
+                    if object:IsA("ProximityPrompt") then
+                        object.HoldDuration = 0
+                        object.MaxActivationDistance = math.max(object.MaxActivationDistance, 30)
+                    end
+                end
+            end)
+        end
+        task.wait(1)
+    end
+end)
+
+Tabs.DTI:AddToggle({
+    Name = "Auto Collect All Item",
+    Callback = function(state)
+        dtiAutoCollectEnabled = state
+    end
+})
+
+task.spawn(function()
+    while true do
+        if dtiAutoCollectEnabled then
+            pcall(function()
+                for _, descendant in ipairs(workspace:GetDescendants()) do
+                    if not dtiAutoCollectEnabled then break end
+                    if descendant:IsA("ClickDetector") then
+                        pcall(function()
+                            fireclickdetector(descendant)
+                        end)
+                    end
+                end
+            end)
+        end
+        task.wait(0.5)
+    end
+end)
+
+Tabs.LT2:AddButton({
+    Name = "Spawn TPTool",
+    Callback = function()
+        pcall(function()
+            local backpack = LocalPlayer:FindFirstChildOfClass("Backpack")
+            if not backpack then return end
+
+            local character = LocalPlayer.Character
+            if backpack:FindFirstChild("Teleport Tool")
+                or (character and character:FindFirstChild("Teleport Tool"))
+            then
+                return
+            end
+
+            local tool = Instance.new("Tool")
+            tool.Name = "Teleport Tool"
+            tool.RequiresHandle = false
+            tool.Parent = backpack
+
+            local mouse = LocalPlayer:GetMouse()
+            tool.Activated:Connect(function()
+                local root = getRoot()
+                local target = mouse.Hit
+                if not root or not target then return end
+
+                root.CFrame = CFrame.new(
+                    target.X,
+                    target.Y + 3,
+                    target.Z,
+                    select(4, root.CFrame:components())
+                )
+
+                pcall(function()
+                    root.AssemblyLinearVelocity = Vector3.zero
+                    root.AssemblyAngularVelocity = Vector3.zero
+                end)
+            end)
+        end)
+    end
+})
+
+Tabs.LT2:AddToggle({
+    Name = "Auto Spam Attack (Custom Remote Textbox)",
+    Callback = function(state)
+        lt2AutoSpamCustom = state
+
+        if lt2AutoSpamCustom then
+            task.spawn(function()
+                while lt2AutoSpamCustom do
+                    pcall(function()
+                        if customRemoteArgsText and customRemoteArgsText ~= "" then
+                            local chunk = loadstring(customRemoteArgsText)
+                            if chunk then chunk() end
+                        end
+                    end)
+                    task.wait(0.05)
+                end
+            end)
+        end
+    end
+})
+
+Tabs.LT2:AddButton({
+    Name = "TELEPORT to WoodBox",
+    Callback = function()
+        pcall(function()
+            local r2q = workspace:FindFirstChild("R2Q")
+            local woodBox = r2q and r2q:FindFirstChild("WoodBox")
+            if not woodBox then return end
+
+            local part = woodBox:IsA("Model")
+                and (woodBox.PrimaryPart or woodBox:FindFirstChildWhichIsA("BasePart"))
+                or woodBox
+
+            if part and part:IsA("BasePart") then
+                TeleportTo(part.Position)
+            end
+        end)
+    end
+})
+
+local ADOPT_ME_SPOT = Vector3.new(2904.218994140625, 10220.732421875, -11969.9921875)
+
+local function goToAdoptMeSpot()
+    pcall(function()
+        local character = LocalPlayer.Character
+        if character then
+            character:PivotTo(CFrame.new(ADOPT_ME_SPOT))
+        end
+    end)
+end
+
+Tabs.AdoptMe:AddButton({
+    Name = "Go to Main Game Area",
+    Callback = goToAdoptMeSpot
+})
+
+Tabs.AdoptMe:AddButton({
+    Name = "Go Buy Classic Egg",
+    Callback = goToAdoptMeSpot
+})
+
+Tabs.Jailbreak:AddToggle({
+    Name = "Instant Interact ProximityPrompt",
+    Callback = function(state)
+        jbInstantInteract = state
+    end
+})
+
+Tabs.Jailbreak:AddToggle({
+    Name = "RGB NPC ESP (Name + Distance)",
+    Callback = function(state)
+        jbNpcEspEnabled = state
+        if not state then jailbreakPool:clear() end
+    end
+})
+
+Tabs.Jailbreak:AddButton({
+    Name = "Tween to NPC (Order 1 - 5)",
+    Callback = function()
+        pcall(function()
+            local root = getRoot()
+            if not root then return end
+
+            noclipEnabled = true
+
+            local r20Npcs = Workspace:FindFirstChild("R20Npcs")
+            if not r20Npcs then return end
+
+            local npc = r20Npcs:FindFirstChild("NPC" .. currentNpcIndex)
+            if npc then
+                local part = npc:IsA("Model")
+                    and (npc.PrimaryPart or npc:FindFirstChildWhichIsA("BasePart"))
+                    or npc
+
+                if part and part:IsA("BasePart") then
+                    local targetCFrame = part.CFrame + Vector3.new(0, 3, 0)
+                    local duration = (root.Position - targetCFrame.Position).Magnitude / 60
+
+                    if activeNpcTween then
+                        activeNpcTween:Cancel()
+                    end
+
+                    activeNpcTween = TweenService:Create(
+                        root,
+                        TweenInfo.new(duration, Enum.EasingStyle.Linear),
+                        { CFrame = targetCFrame }
+                    )
+                    activeNpcTween:Play()
+                end
+            end
+
+            currentNpcIndex = currentNpcIndex >= 5 and 1 or currentNpcIndex + 1
+        end)
+    end
+})
+
+local cakeCollectToggleState = false
+
+Tabs.BuildABoat:AddToggle({
+    Name = "Collect All Cake ingredients",
+    Callback = function(state)
+        cakeCollectToggleState = state
+        
+        if cakeCollectToggleState then
+            task.spawn(function()
+                local positions = {
+                    Vector3.new(-40.881309509277344, 11.792511940002441, 2652.24169921875),
+                    Vector3.new(193, 91, 2589),
+                    Vector3.new(76, -8, 2538)
+                }
+                
+                while cakeCollectToggleState do
+                    for _, pos in ipairs(positions) do
+                        if not cakeCollectToggleState then break end
+                        pcall(function()
+                            local character = LocalPlayer.Character
+                            if character then
+                                character:PivotTo(CFrame.new(pos))
+                            end
+                        end)
+                        task.wait(0.5)
+                    end
+                    task.wait(1)
+                end
+            end)
+        end
+    end
+})
+
+Tabs.BerryAvenue:AddToggle({
+    Name = "Instant Interact",
+    Callback = function(state)
+        berryInstantInteract = state
+    end
+})
+
+Tabs.Piggy:AddToggle({
+    Name = "TPWalk",
+    Callback = function(value)
+        piggyTpWalk = value
+    end,
+})
+
+Tabs.Piggy:AddToggle({
+    Name = "Noclip",
+    Callback = function(value)
+        piggyNoclip = value
+        if piggyNoclip then
+            EnableNoclip()
+        else
+            DisableNoclip()
+        end
+    end,
+})
+
+Tabs.Piggy:AddToggle({
+    Name = "Infinite Jump",
+    Callback = function(value)
+        piggyInfiniteJump = value
+    end,
+})
+
+Tabs.Piggy:AddToggle({
+    Name = "Fullbright",
+    Callback = function(value)
+        if value then
+            Lighting.Brightness = 2
+            Lighting.ClockTime = 14
+            Lighting.GlobalShadows = false
+        else
+            Lighting.Brightness = piggyLightingDefaults.Brightness
+            Lighting.ClockTime = piggyLightingDefaults.ClockTime
+            Lighting.GlobalShadows = piggyLightingDefaults.GlobalShadows
+        end
+    end,
+})
+
+Tabs.Piggy:AddToggle({
+    Name = "No Fog",
+    Callback = function(value)
+        if value then
+            piggyLightingDefaults.FogEnd = Lighting.FogEnd
+            Lighting.FogEnd = 9000000000
+        else
+            Lighting.FogEnd = piggyLightingDefaults.FogEnd
+        end
+    end,
+})
+
+Tabs.Piggy:AddToggle({
+    Name = "FPS Boost (Removes lag & shadows)",
+    Callback = function(value)
+        if value then
+            settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+            Lighting.GlobalShadows = false
+            Lighting.FogEnd = 9000000000
+
+            for _, object in ipairs(Workspace:GetDescendants()) do
+                if object:IsA("BasePart") then
+                    object.Material = Enum.Material.SmoothPlastic
+                    object.Reflectance = 0
+                elseif object:IsA("ParticleEmitter") or object:IsA("Trail") then
+                    object.Enabled = false
+                end
+            end
+        else
+            settings().Rendering.QualityLevel = Enum.QualityLevel.Automatic
+            Lighting.GlobalShadows = true
+        end
+    end,
+})
+
+Tabs.Piggy:AddToggle({
+    Name = "Player & Piggy ESP",
+    Callback = function(value)
+        piggyEspFlag = value
+        if not value then clearPiggyEsp() end
+    end,
+})
+
+Tabs.Piggy:AddToggle({
+    Name = "Key ESP (Names + Distance)",
+    Callback = function(value)
+        piggyKeyEspState = value
+        if not value then clearPiggyKeyEsp() end
+    end,
+})
+
+local function root()
+    return LocalPlayer.Character.HumanoidRootPart
+end
+
+local function placeWell()
+    local Well
+    for _, descendant in pairs(workspace:GetDescendants()) do
+        if descendant.ClassName == "ProximityPrompt"
+            and descendant.Parent.Parent.Parent.Name == "Well_Event"
+            and descendant.Parent.Parent.Parent.Parent.Parent.Name == "HouseRemake"
+            and descendant.Parent.Parent.Parent:FindFirstChild("Well") then
+            Well = descendant.Parent.Parent.Parent:FindFirstChild("Well")
+            root().CFrame = Well.CFrame
+            fireproximityprompt(descendant)
+        end
+    end
+    if Well then
+        for _, name in ipairs({"Place", "Splash", "Tie"}) do
+            local sound = Well:FindFirstChild(name)
+            if sound then
+                sound.Volume = 10
+                sound.MaxDistance = 1000000
+            end
+        end
+    end
+end
+
+if game.PlaceId == 4623386862 then
+    Tabs.Piggy:AddButton({
+        Name = "Get a wrench",
+        Callback = function()
+            for _, descendant in pairs(workspace:GetDescendants()) do
+                if descendant.ClassName == "SpecialMesh" and descendant.MeshId == "http://www.roblox.com/asset/?id=16884681" then
+                    root().CFrame = descendant.Parent.CFrame
+                    fireclickdetector(descendant.Parent:FindFirstChildWhichIsA("ClickDetector"))
+                end
+            end
+        end
+    })
+
+    Tabs.Piggy:AddButton({
+        Name = "Use wrench",
+        Callback = function()
+            for _, descendant in pairs(workspace:GetDescendants()) do
+                if descendant.ClassName == "Sound" and descendant.SoundId == "rbxassetid://9159753871" then
+                    descendant.Volume = 10
+                    descendant.MaxDistance = 1000000
+                    for _, descendant2 in pairs(descendant.Parent.Parent:GetDescendants()) do
+                        if descendant2.ClassName == "ClickDetector" then
+                            fireclickdetector(descendant2)
+                        end
+                    end
+                end
+            end
+        end
+    })
+
+    Tabs.Piggy:AddButton({
+        Name = "Get a shovel",
+        Callback = function()
+            for _, descendant in pairs(workspace:GetDescendants()) do
+                if descendant.ClassName == "SpecialMesh" and descendant.MeshId == "rbxassetid://1448137661" then
+                    root().CFrame = descendant.Parent.CFrame
+                    fireclickdetector(descendant.Parent:FindFirstChildWhichIsA("ClickDetector"))
+                end
+            end
+        end
+    })
+
+    Tabs.Piggy:AddButton({
+        Name = "Use shovel (unlock second part)",
+        Callback = function()
+            for _, descendant in pairs(workspace:GetDescendants()) do
+                if descendant.ClassName == "Sound" and descendant.SoundId == "rbxassetid://189854277" then
+                    descendant.Volume = 10
+                    descendant.MaxDistance = 1000000
+                    if descendant.Parent:FindFirstChildWhichIsA("ClickDetector") then
+                        fireclickdetector(descendant.Parent:FindFirstChildWhichIsA("ClickDetector"))
+                    end
+                end
+            end
+        end
+    })
+
+    Tabs.Piggy:AddButton({
+        Name = "Get a hammer",
+        Callback = function()
+            for _, descendant in pairs(workspace:GetDescendants()) do
+                if descendant.ClassName == "SpecialMesh"
+                    and descendant.MeshId == "http://www.roblox.com/asset/?id=16198309"
+                    and descendant.Parent:FindFirstChild("HR_ItemPickupScript") then
+                    root().CFrame = descendant.Parent.CFrame
+                    if descendant.Parent:FindFirstChildWhichIsA("ProximityPrompt") then
+                        fireproximityprompt(descendant.Parent:FindFirstChildWhichIsA("ProximityPrompt"))
+                    end
+                end
+            end
+        end
+    })
+
+    Tabs.Piggy:AddButton({
+        Name = "Use hammer (door)",
+        Callback = function()
+            local Door
+            for _, descendant in pairs(workspace:GetDescendants()) do
+                if descendant.ClassName == "ProximityPrompt"
+                    and descendant.Parent.Parent.Parent.Parent.Name == "Door_Exit"
+                    and descendant.Parent.Parent.Parent.Parent.Parent.Parent.Name == "HouseRemake" then
+                    local exitRoot = descendant.Parent.Parent.Parent.Parent
+                    if exitRoot:FindFirstChild("Door") then
+                        Door = exitRoot.Door
+                        if Door:FindFirstChild("DoorMain") then
+                            root().CFrame = Door.DoorMain.CFrame
+                            fireproximityprompt(descendant)
+                        end
+                    end
+                end
+            end
+            if Door and Door:FindFirstChild("DoorMain") then
+                for _, name in ipairs({"CreakSound", "OpenSound"}) do
+                    local sound = Door.DoorMain:FindFirstChild(name)
+                    if sound then
+                        sound.Volume = 10
+                        sound.MaxDistance = 1000000
+                    end
+                end
+            end
+        end
+    })
+
+    Tabs.Piggy:AddButton({
+        Name = "Get a bucket",
+        Callback = function()
+            for _, descendant in pairs(workspace:GetDescendants()) do
+                if descendant.ClassName == "MeshPart"
+                    and descendant.MeshId == "rbxassetid://18531834967"
+                    and descendant:FindFirstChild("HR_ItemPickupScript") then
+                    root().CFrame = descendant.CFrame
+                    if descendant:FindFirstChildWhichIsA("ProximityPrompt") then
+                        fireproximityprompt(descendant:FindFirstChildWhichIsA("ProximityPrompt"))
+                    end
+                end
+            end
+        end
+    })
+
+    Tabs.Piggy:AddButton({
+        Name = "Place a bucket (well)",
+        Callback = placeWell
+    })
+
+    Tabs.Piggy:AddButton({
+        Name = "Get a rope",
+        Callback = function()
+            for _, descendant in pairs(workspace:GetDescendants()) do
+                if descendant.ClassName == "MeshPart"
+                    and descendant.MeshId == "http://www.roblox.com/asset/?id=16606212"
+                    and descendant:FindFirstChild("HR_ItemPickupScript") then
+                    root().CFrame = descendant.CFrame
+                    if descendant:FindFirstChildWhichIsA("ProximityPrompt") then
+                        fireproximityprompt(descendant:FindFirstChildWhichIsA("ProximityPrompt"))
+                    end
+                end
+            end
+        end
+    })
+
+    Tabs.Piggy:AddButton({
+        Name = "Place a rope (well)",
+        Callback = placeWell
+    })
+
+    Tabs.Piggy:AddButton({
+        Name = "Get main door key",
+        Callback = function()
+            for _, descendant in pairs(workspace:GetDescendants()) do
+                if descendant.ClassName == "ProximityPrompt"
+                    and descendant.ObjectText == "Front Door Key"
+                    and descendant.Parent:FindFirstChild("HR_ItemPickupScript") then
+                    root().CFrame = descendant.Parent.CFrame
+                    fireproximityprompt(descendant)
+                end
+            end
+        end
+    })
+
+    Tabs.Piggy:AddButton({
+        Name = "Unlock main door",
+        Callback = function()
+            for _, descendant in pairs(workspace:GetDescendants()) do
+                if descendant.ClassName == "ProximityPrompt"
+                    and descendant.Parent.Parent.Parent.Name == "HandleModel"
+                    and descendant.Parent.Parent.Parent.Parent.Parent.Name == "Door_Exit" then
+                    root().CFrame = descendant.Parent.Parent.CFrame
+                    if descendant.Parent.Parent:FindFirstChild("LockedSound") then
+                        descendant.Parent.Parent.LockedSound.Volume = 10
+                        descendant.Parent.Parent.LockedSound.MaxDistance = 1000000
+                    end
+                    fireproximityprompt(descendant)
+                end
+            end
+        end
+    })
+end
+
+if game.PlaceId ~= 4623386862 then
+    Tabs.Piggy:AddButton({
+        Name = "Teleport to event game",
+        Callback = function()
+            game:GetService("TeleportService"):Teleport(4623386862)
+        end
+    })
+end
+
+Tabs.ApocalypseRising2:AddToggle({
+    Name = "Green Zombie ESP (Only)",
+    Callback = function(value)
+        azZombieEspEnabled = value
+        if not value then zombiePool:clear() end
+    end,
+})
+
+Tabs.ApocalypseRising2:AddToggle({
+    Name = "Auto Aimbot Zombie (Only)",
+    Callback = function(value)
+        azZombieAimlockEnabled = value
+    end,
+})
+
+Tabs.ApocalypseRising2:AddToggle({
+    Name = "ESP Items (FAMAS, Backpack, etc)",
+    Callback = function(value)
+        azItemsEspEnabled = value
+        if not value then itemPool:clear() end
+    end,
+})
+
+Tabs.ApocalypseRising2:AddToggle({
+    Name = "ESP Melee (Fire Axe, Machete, etc - Large Size)",
+    Callback = function(value)
+        azMeleeEspEnabled = value
+        if not value then meleePool:clear() end
+    end,
+})
+
+Tabs.ApocalypseRising2:AddToggle({
+    Name = "Auto Walk Until Reach 5k Studs",
+    Callback = function(value)
+        azAutoWalkEnabled = value
+    end,
+})
+
+Tabs.BaseWar:AddToggle({
+    Name = "ESP All Player",
+    Callback = function(state)
+        UpdateBaseWarsESP(state)
+    end
+})
+
+Tabs.BaseWar:AddToggle({
+    Name = "Anti AFK",
+    Callback = function(state)
+        if state then
+            local VirtualUser = game:GetService("VirtualUser")
+            antiAfkConnection = LocalPlayer.Idled:Connect(function()
+                VirtualUser:CaptureController()
+                VirtualUser:ClickButton2(Vector2.new())
+            end)
+        else
+            if antiAfkConnection then
+                antiAfkConnection:Disconnect()
+                antiAfkConnection = nil
+            end
+        end
+    end
+})
+
+local adminCode = "9d7252bdb989f945ad03244d77ac1a1c"
+local devCode = "c58751fe10951c4d83c9a9514916b484"
+
+Tabs.Launcher:AddButton({
+    Name = "Copy Launcher Admin Link (Private Server)",
+    Callback = function()
+        setclipboard("https://www.roblox.com/games/" .. tostring(game.PlaceId) .. "?privateServerLinkCode=" .. adminCode)
+    end
+})
+
+Tabs.Launcher:AddButton({
+    Name = "Copy Launcher Dev Link (Private Server)",
+    Callback = function()
+        setclipboard("https://www.roblox.com/games/" .. tostring(game.PlaceId) .. "?privateServerLinkCode=" .. devCode)
+    end
+})
+
+Tabs.Credit:AddButton({
+    Name = "Copy Social YouTube Link",
+    Callback = function()
+        setclipboard("https://www.youtube.com/@FhriiX7")
+    end
+})
+
+Tabs.Credit:AddButton({
+    Name = "Copy Social EgiXPloit YouTube Link",
+    Callback = function()
+        setclipboard("https://youtube.com/@nearby1x?si=nMbN7fBRoOrP-zpi")
+    end
+})
+
+Tabs.Credit:AddButton({
+    Name = "Copy Social FeelPlays YouTube Link",
+    Callback = function()
+        setclipboard("https://youtube.com/@feelthepainn?si=6lQmFBIvZL9Fm4N_")
+    end
+})
