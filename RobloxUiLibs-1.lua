@@ -53,7 +53,7 @@ local THEMES = {
 		Field = Color3.fromRGB(38, 6, 6),
 		TabBg = Color3.fromRGB(42, 7, 7),
 		Background = "rbxassetid://137184743125361",
-		Logo = "rbxassetid://93173938668072"
+		Logo = "rbxassetid://107253905846631"
 	}
 }
 
